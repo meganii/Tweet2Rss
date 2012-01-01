@@ -29,10 +29,9 @@ class MainHandler(webapp.RequestHandler):
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
-        for tweets in tweepy.Cursor(api.home_timeline).items(100):
-            self.response.out.write(tweets.id)
-
-
+        list_tl = api.list_timeline(owner='meganii',slug='lifehacks')
+        for tweets in list_tl:
+            self.response.out.write(tweets.text)
 
 def main():
     application = webapp.WSGIApplication([('/', MainHandler)],
