@@ -18,10 +18,10 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 import tweepy
 
-consumer_key = "jjS66p3foM29k4Uq0XFpQ"
-consumer_secret = "MdTJUsaHvyW3GA1ZEXDIMr2d69eQ0iO4eswjHua42k"
-access_key = "362950164-WZgnbHgRRJdvHhCR0wS5aJcZ1oKZ8vc3M7RPQh2W"
-access_secret = "gmziqQUWrJ6fOKKD6vC3whatx3QWz2oAgBdPhYYdLYc"
+consumer_key = CONSUMER_KEY
+consumer_secret = SECRET
+access_key = ACCESS_KEY
+access_secret = ACCESS_SECRET
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
