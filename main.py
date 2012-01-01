@@ -16,11 +16,22 @@
 #
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
+import tweepy
 
+consumer_key = "jjS66p3foM29k4Uq0XFpQ"
+consumer_secret = "MdTJUsaHvyW3GA1ZEXDIMr2d69eQ0iO4eswjHua42k"
+access_key = "362950164-WZgnbHgRRJdvHhCR0wS5aJcZ1oKZ8vc3M7RPQh2W"
+access_secret = "gmziqQUWrJ6fOKKD6vC3whatx3QWz2oAgBdPhYYdLYc"
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
-        self.response.out.write('Hello world!')
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_key, access_secret)
+        api = tweepy.API(auth_handler=auth)
+
+        for tweets in tweepy.Cursor(api.home_timeline).items(100):
+            self.response.out.write(tweets.id)
+
 
 
 def main():
