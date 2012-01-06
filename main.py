@@ -17,11 +17,16 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 import tweepy
+import ConfigParser
 
-consumer_key = "jjS66p3foM29k4Uq0XFpQ"
-consumer_secret = "MdTJUsaHvyW3GA1ZEXDIMr2d69eQ0iO4eswjHua42k"
-access_key = "362950164-WZgnbHgRRJdvHhCR0wS5aJcZ1oKZ8vc3M7RPQh2W"
-access_secret = "gmziqQUWrJ6fOKKD6vC3whatx3QWz2oAgBdPhYYdLYc"
+CONFIG_FILE = 'param.config'
+config = ConfigParser.ConfigParser()
+config.read(CONFIG_FILE)
+
+consumer_key    = config.get('env','consumer_key')
+consumer_secret = config.get('env','consumer_secret')
+access_key      = config.get('env','access_key')
+access_secret   = config.get('env','access_secret')
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
