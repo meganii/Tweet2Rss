@@ -19,7 +19,7 @@ from google.appengine.ext.webapp import util
 import tweepy
 import ConfigParser
 
-CONFIG_FILE = 'param.config'
+CONFIG_FILE = 'config.ini'
 config = ConfigParser.ConfigParser()
 config.read(CONFIG_FILE)
 
