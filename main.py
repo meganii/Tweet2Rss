@@ -29,7 +29,7 @@ class MainHandler(webapp.RequestHandler):
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
-        list_tl = api.list_timeline(owner='meganii', slug='web')
+        list_tl = api.list_timeline(owner='meganii', slug='lifehacks')
         for tweets in list_tl:
             result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
             if result.get() == None:
