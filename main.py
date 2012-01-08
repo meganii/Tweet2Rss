@@ -17,7 +17,6 @@ consumer_secret = config.get('env','consumer_secret')
 access_key      = config.get('env','access_key')
 access_secret   = config.get('env','access_secret')
 
-
 class Tweet(db.Model):
     id =  db.IntegerProperty()
     date = db.DateTimeProperty(auto_now_add=True)
@@ -30,14 +29,23 @@ class MainHandler(webapp.RequestHandler):
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
-        list_tl = api.list_timeline(owner='meganii',slug='lifehacks')
+        list_tl = api.list_timeline(owner='meganii', slug='web')
         for tweets in list_tl:
-            m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
-            if m:
-                tweet = Tweet()
-                tweet.content = tweets.text
-                tweet.save()
-                self.response.out.write(tweets.text)
+            result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
+            if result.get() == None:
+                self.response.out.write("none")         
+                m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
+                if m:
+                    tweet = Tweet()
+                    tweet.id = tweets.id
+                    tweet.content = tweets.text
+                    tweet.save()
+                    self.response.out.write(tweets.text)
+            else:
+                self.response.out.write(tweets.id)
+                self.response.out.write("\n")
+
+
 
 class Show(webapp.RequestHandler):
     def get(self):
