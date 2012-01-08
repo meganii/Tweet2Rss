@@ -1,4 +1,5 @@
-- description: 
-  url: /goodnight
+cron:
+- description: gettweets
+  url: /
   schedule: every 10 minutes
   timezone: Asia/Tokyo
