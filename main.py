@@ -36,10 +36,20 @@ class MainHandler(webapp.RequestHandler):
             if m:
                 tweet = Tweet()
                 tweet.content = tweets.text
+                tweet.save()
                 self.response.out.write(tweets.text)
 
+class Show(webapp.RequestHandler):
+    def get(self):
+        self.response.out.write('show')
+        tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date")
+        self.response.out.write(tweets)
+        for tweet in tweets:
+            self.response.out.write(tweet.content)
+
 def main():
-    application = webapp.WSGIApplication([('/', MainHandler)],
+    application = webapp.WSGIApplication([('/', MainHandler),
+                                          ('/show',Show)],
                                          debug=True)
     util.run_wsgi_app(application)
 
