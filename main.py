@@ -4,6 +4,7 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext import db
+from django.utils import feedgenerator
 import re
 import tweepy
 import ConfigParser
@@ -66,9 +67,30 @@ class Show(webapp.RequestHandler):
         for tweet in tweets:
             self.response.out.write(tweet.content)
 
+class Rss(webapp.RequestHandler):
+    def get(self):
+        # フィード作成
+        feed = feedgenerator.Rss201rev2Feed(
+            title = "RSSのタイトル",
+            link = "RSSのURL",
+            description = "RSSの説明",
+            language = u"ja")
+    
+        # フィードにエントリを追加
+        feed.add_item(
+            title = "記事タイトル",
+            link = "記事のURL",
+            description = "記事の概要")
+    
+        # RSS 文字列にする
+        rss = feed.writeString("utf-8")
+        self.response.headers['Content-Type']='text/xml; charset=utf-8'
+        self.response.out.write(rss)
+
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
-                                          ('/show',Show)],
+                                          ('/show',Show),
+                                          ('/rss',Rss)],
                                          debug=True)
     util.run_wsgi_app(application)
 
