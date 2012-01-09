@@ -17,6 +17,9 @@ consumer_secret = config.get('env','consumer_secret')
 access_key      = config.get('env','access_key')
 access_secret   = config.get('env','access_secret')
 
+OWNER = 'meganii'
+SLUG  = 'lifehacks'
+
 class Tweet(db.Model):
     id =  db.IntegerProperty()
     date = db.DateTimeProperty(auto_now_add=True)
@@ -29,7 +32,16 @@ class MainHandler(webapp.RequestHandler):
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
-        for tweets in tweepy.Cursor(api.list_timeline,owner='meganii',slug='lifehacks').items(100):
+        result = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
+        s_id = '';
+
+        for i, r in enumerate(result):
+            if i == 0:
+                s_id = r.id
+
+        self.response.out.write(s_id)
+
+        for tweets in tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id).items(100):
             result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
             if result.get() == None:
                 self.response.out.write("none")         
