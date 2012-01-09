@@ -41,16 +41,20 @@ class MainHandler(webapp.RequestHandler):
 
         cursor = None
         if s_id != None:
-            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id).items(100)
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id,include_entities='true').items(100)
         else:
-            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG).items(100)
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,include_entities='true').items(100)
 
         for tweets in cursor:
+
             result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
             if result.get() == None:
                 self.response.out.write("none data")
                 m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
                 if m:
+                    
+                    for e in tweets.entities['urls']:
+                        self.response.out.write(e['url'])
                     tweet = Tweet()
                     tweet.id = tweets.id
                     tweet.url = m.group(1)
@@ -84,7 +88,8 @@ class Rss(webapp.RequestHandler):
             feed.add_item(
                 title = tweet.content,
                 link = tweet.url,
-                description = tweet.content)
+                description = tweet.content,
+                pubdate = tweet.date)
     
         # RSS 文字列にする
         rss = feed.writeString("utf-8")
@@ -93,15 +98,22 @@ class Rss(webapp.RequestHandler):
 
 class Delete(webapp.RequestHandler):
     def get(self):
-        q = Tweet.all(keys_only=True)
-        results = q.fetch(q.count())
-        db.delete(results)
+        q = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
+        res = q.fetch(1)
+        db.delete(q.fetch(q.count()))
+        db.put(res)
+
+class DeleteAll(webapp.RequestHandler):
+    def get(self):
+        q = Tweet.all()
+        db.delete(q.fetch(q.count()))
 
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
                                           ('/show',Show),
                                           ('/rss',Rss),
-                                          ('/delete',Delete)],
+                                          ('/delete',Delete),
+                                          ('/deleteall',DeleteAll)],
                                          debug=True)
     util.run_wsgi_app(application)
 
