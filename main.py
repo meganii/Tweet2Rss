@@ -27,7 +27,6 @@ class Tweet(db.Model):
     content = db.StringProperty(multiline=True)
     url = db.StringProperty(multiline=True)
 
-
 class MainHandler(webapp.RequestHandler):
     def get(self):
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -63,8 +62,6 @@ class MainHandler(webapp.RequestHandler):
                     self.response.out.write(tweets.id)
                     self.response.out.write("\n")
 
-
-
 class Show(webapp.RequestHandler):
     def get(self):
         self.response.out.write('show')
@@ -94,10 +91,17 @@ class Rss(webapp.RequestHandler):
         self.response.headers['Content-Type']='text/xml; charset=utf-8'
         self.response.out.write(rss)
 
+class Delete(webapp.RequestHandler):
+    def get(self):
+        q = Tweet.all(keys_only=True)
+        results = q.fetch(q.count())
+        db.delete(results)
+
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
                                           ('/show',Show),
-                                          ('/rss',Rss)],
+                                          ('/rss',Rss),
+                                          ('/delete',Delete)],
                                          debug=True)
     util.run_wsgi_app(application)
 
