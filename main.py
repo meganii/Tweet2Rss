@@ -27,6 +27,7 @@ class Tweet(db.Model):
     content = db.StringProperty(multiline=True)
     url = db.StringProperty(multiline=True)
 
+
 class MainHandler(webapp.RequestHandler):
     def get(self):
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
@@ -34,28 +35,33 @@ class MainHandler(webapp.RequestHandler):
         api = tweepy.API(auth_handler=auth)
 
         result = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
-        s_id = '';
-
+        s_id = None
         for i, r in enumerate(result):
             if i == 0:
                 s_id = r.id
 
-        self.response.out.write(s_id)
+        cursor = None
+        if s_id != None:
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id).items(100)
+        else:
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG).items(100)
 
-        for tweets in tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id).items(100):
+        for tweets in cursor:
             result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
             if result.get() == None:
-                self.response.out.write("none")         
+                self.response.out.write("none data")
                 m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
                 if m:
                     tweet = Tweet()
                     tweet.id = tweets.id
+                    tweet.url = m.group(1)
                     tweet.content = tweets.text
                     tweet.save()
                     self.response.out.write(tweets.text)
-            else:
-                self.response.out.write(tweets.id)
-                self.response.out.write("\n")
+                else:
+                    self.response.out.write("nothing url")
+                    self.response.out.write(tweets.id)
+                    self.response.out.write("\n")
 
 
 
@@ -71,16 +77,17 @@ class Rss(webapp.RequestHandler):
     def get(self):
         # フィード作成
         feed = feedgenerator.Rss201rev2Feed(
-            title = "RSSのタイトル",
+            title = "extweet",
             link = "RSSのURL",
             description = "RSSの説明",
             language = u"ja")
-    
-        # フィードにエントリを追加
-        feed.add_item(
-            title = "記事タイトル",
-            link = "記事のURL",
-            description = "記事の概要")
+
+        tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date")
+        for tweet in tweets:
+            feed.add_item(
+                title = tweet.content,
+                link = tweet.url,
+                description = tweet.content)
     
         # RSS 文字列にする
         rss = feed.writeString("utf-8")
