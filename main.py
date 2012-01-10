@@ -46,25 +46,20 @@ class MainHandler(webapp.RequestHandler):
             cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,include_entities='true').items(100)
 
         for tweets in cursor:
-
-            result = db.GqlQuery("SELECT * FROM Tweet WHERE id=:1", tweets.id)
-            if result.get() == None:
-                self.response.out.write("none data")
-                m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
-                if m:
-                    
-                    for e in tweets.entities['urls']:
-                        self.response.out.write(e['url'])
-                    tweet = Tweet()
-                    tweet.id = tweets.id
-                    tweet.url = m.group(1)
-                    tweet.content = tweets.text
-                    tweet.save()
-                    self.response.out.write(tweets.text)
-                else:
-                    self.response.out.write("nothing url")
-                    self.response.out.write(tweets.id)
-                    self.response.out.write("\n")
+            m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
+            if m:
+                for e in tweets.entities['urls']:
+                    self.response.out.write(e['url'])
+                tweet = Tweet()
+                tweet.id = tweets.id
+                tweet.url = m.group(1)
+                tweet.content = tweets.text
+                tweet.save()
+                self.response.out.write(tweets.text)
+            else:
+                self.response.out.write("nothing url")
+                self.response.out.write(tweets.id)
+                self.response.out.write("\n")
 
 class Show(webapp.RequestHandler):
     def get(self):
