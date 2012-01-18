@@ -29,37 +29,38 @@ class Tweet(db.Model):
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
+        self.response.out.write("index")
+
+class Get(webapp.RequestHandler):
+    def get(self):
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
         result = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
-        s_id = None
-        for i, r in enumerate(result):
-            if i == 0:
-                s_id = r.id
+        s_id = result.get() # get 1 object
 
-        cursor = None
         if s_id != None:
-            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id,include_entities='true').items(100)
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id.id,include_entities='true').items(100)
         else:
             cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,include_entities='true').items(100)
 
         for tweets in cursor:
             m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
             if m:
-                for e in tweets.entities['urls']:
-                    self.response.out.write(e['url'])
-                tweet = Tweet()
-                tweet.id = tweets.id
-                tweet.url = m.group(1)
-                tweet.content = tweets.text
-                tweet.save()
-                self.response.out.write(tweets.text)
+#                 for e in tweets.entities['urls']:
+#                     self.response.out.write(e['url'])
+                if tweets.id > s_id:
+                    tweet = Tweet()
+                    tweet.id = tweets.id
+                    tweet.url = m.group(1)
+                    tweet.content = tweets.text
+                    tweet.save()
+                    self.response.out.write(tweets.text)
             else:
                 self.response.out.write("nothing url")
-                self.response.out.write(tweets.id)
-                self.response.out.write("\n")
+#                 self.response.out.write(tweets.id)
+#                 self.response.out.write("\n")
 
 class Show(webapp.RequestHandler):
     def get(self):
@@ -105,6 +106,7 @@ class DeleteAll(webapp.RequestHandler):
 
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
+                                          ('/get',Get),
                                           ('/show',Show),
                                           ('/rss',Rss),
                                           ('/delete',Delete),
