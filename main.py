@@ -25,7 +25,7 @@ class Tweet(db.Model):
     id =  db.IntegerProperty()
     date = db.DateTimeProperty(auto_now_add=True)
     content = db.StringProperty(multiline=True)
-    url = db.StringProperty(multiline=True)
+    urls = db.StringListProperty()
 
 class MainHandler(webapp.RequestHandler):
     def get(self):
@@ -46,30 +46,26 @@ class Get(webapp.RequestHandler):
             cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,include_entities='true').items(100)
 
         for tweets in cursor:
-            m = re.search("(http://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+)", tweets.text)
-            if m:
-#                 for e in tweets.entities['urls']:
-#                     self.response.out.write(e['url'])
+            tweeturls = []
+            for e in tweets.entities['urls']:
+                tweeturls.append(e['url'])
+
+            if len(tweeturls) > 0:
                 if lasttweet != None:
                     if tweets.id > lasttweet.id:
                         tweet = Tweet()
                         tweet.id = tweets.id
-                        tweet.url = m.group(1)
+                        tweet.urls = tweeturls
                         tweet.content = tweets.text
                         tweet.save()
                         self.response.out.write(tweets.text)
                 else:
                     tweet = Tweet()
                     tweet.id = tweets.id
-                    tweet.url = m.group(1)
+                    tweet.urls = tweeturls
                     tweet.content = tweets.text
                     tweet.save()
                     self.response.out.write(tweets.text)
-                    
-            else:
-                self.response.out.write("nothing url")
-#                 self.response.out.write(tweets.id)
-#                 self.response.out.write("\n")
 
 class Show(webapp.RequestHandler):
     def get(self):
