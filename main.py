@@ -6,6 +6,7 @@ from google.appengine.ext.webapp import util
 from google.appengine.ext import db
 from django.utils import feedgenerator
 import re
+import urllib2
 import tweepy
 import ConfigParser
 
@@ -48,7 +49,7 @@ class Get(webapp.RequestHandler):
         for tweets in cursor:
             tweeturls = []
             for e in tweets.entities['urls']:
-                tweeturls.append(e['url'])
+                tweeturls.append(e['expanded_url'])
 
             if len(tweeturls) > 0:
                 if lasttweet != None:
@@ -73,7 +74,7 @@ class Show(webapp.RequestHandler):
         tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date")
         self.response.out.write(tweets)
         for tweet in tweets:
-            self.response.out.write(tweet.content)
+            self.response.out.write(tweet.urls)
 
 class Rss(webapp.RequestHandler):
     def get(self):
@@ -109,13 +110,24 @@ class DeleteAll(webapp.RequestHandler):
         q = Tweet.all()
         db.delete(q.fetch(q.count()))
 
+class Expand(webapp.RequestHandler):
+    def get(self):
+        q = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
+        res = q.fetch(10)
+        for t in res:
+            for u in t.urls:
+                url = urllib2.urlopen(u).geturl()
+                self.response.out.write(url)
+                self.response.out.write("\n")
+
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
                                           ('/get',Get),
                                           ('/show',Show),
                                           ('/rss',Rss),
                                           ('/delete',Delete),
-                                          ('/deleteall',DeleteAll)],
+                                          ('/deleteall',DeleteAll),
+                                          ('/expand',Expand)],
                                          debug=True)
     util.run_wsgi_app(application)
 
