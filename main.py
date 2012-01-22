@@ -37,11 +37,11 @@ class Get(webapp.RequestHandler):
         auth.set_access_token(access_key, access_secret)
         api = tweepy.API(auth_handler=auth)
 
-        result = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
-        s_id = result.get() # get 1 object
+        result = db.GqlQuery("SELECT * FROM Tweet ORDER BY id DESC")
+        lasttweet = result.get() # get 1 object
 
-        if s_id != None:
-            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=s_id.id,include_entities='true').items(100)
+        if lasttweet != None:
+            cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=lasttweet.id,include_entities='true').items(100)
         else:
             cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,include_entities='true').items(100)
 
@@ -50,13 +50,22 @@ class Get(webapp.RequestHandler):
             if m:
 #                 for e in tweets.entities['urls']:
 #                     self.response.out.write(e['url'])
-                if tweets.id > s_id:
+                if lasttweet != None:
+                    if tweets.id > lasttweet.id:
+                        tweet = Tweet()
+                        tweet.id = tweets.id
+                        tweet.url = m.group(1)
+                        tweet.content = tweets.text
+                        tweet.save()
+                        self.response.out.write(tweets.text)
+                else:
                     tweet = Tweet()
                     tweet.id = tweets.id
                     tweet.url = m.group(1)
                     tweet.content = tweets.text
                     tweet.save()
                     self.response.out.write(tweets.text)
+                    
             else:
                 self.response.out.write("nothing url")
 #                 self.response.out.write(tweets.id)
@@ -79,7 +88,7 @@ class Rss(webapp.RequestHandler):
             description = "RSSの説明",
             language = u"ja")
 
-        tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date")
+        tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
         for tweet in tweets:
             feed.add_item(
                 title = tweet.content,
