@@ -88,7 +88,7 @@ class Rss(webapp.RequestHandler):
         for tweet in tweets:
             feed.add_item(
                 title = tweet.content,
-                link = tweet.url,
+                link = tweet.urls[0],
                 description = tweet.content,
                 pubdate = tweet.date)
     
