@@ -120,6 +120,21 @@ class Expand(webapp.RequestHandler):
                 self.response.out.write(url)
                 self.response.out.write("\n")
 
+class Meganii(webapp.RequestHandler):
+    def get(self):
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+        auth.set_access_token(access_key, access_secret)
+        api = tweepy.API(auth_handler=auth)
+
+        cursor = tweepy.Cursor(api.home_timeline,include_entities='true').items(100)
+
+        for tweets in cursor:
+            self.response.out.write(tweets.text)
+            tweeturls = []
+            for e in tweets.entities['urls']:
+                tweeturls.append(e['expanded_url'])
+                self.response.out.write(e['expanded_url'])
+
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
                                           ('/get',Get),
@@ -127,7 +142,8 @@ def main():
                                           ('/rss',Rss),
                                           ('/delete',Delete),
                                           ('/deleteall',DeleteAll),
-                                          ('/expand',Expand)],
+                                          ('/expand',Expand),
+                                          ('/meganii',Meganii)],
                                          debug=True)
     util.run_wsgi_app(application)
 
