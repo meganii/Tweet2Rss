@@ -4,7 +4,9 @@
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp import util
 from google.appengine.ext import db
+from google.appengine.ext.webapp import template
 from django.utils import feedgenerator
+import os
 import re
 import urllib2
 import tweepy
@@ -128,12 +130,31 @@ class Meganii(webapp.RequestHandler):
 
         cursor = tweepy.Cursor(api.home_timeline,include_entities='true').items(100)
 
+
+        tweetlist = []
         for tweets in cursor:
-            self.response.out.write(tweets.text)
             tweeturls = []
             for e in tweets.entities['urls']:
-                tweeturls.append(e['expanded_url'])
-                self.response.out.write(e['expanded_url'])
+                tweeturls << e['expanded_url']
+
+            if len(tweeturls) > 0:
+                tweet = Tweet()
+                tweet.urls = tweeturls
+                tweet.content = tweets.text
+                tweetlist.append(tweet)
+
+        template_values = {
+            'tweetlist': tweetlist,
+            }
+
+        path = os.path.join(os.path.dirname(__file__), 'index.html')
+        self.response.out.write(template.render(path, template_values))
+
+class Meganiicom(webapp.RequestHandler):
+    def get(self):
+        u = 'http://meganii.com'
+        url = urllib2.urlopen(u).geturl()
+        self.response.out.write(url)
 
 def main():
     application = webapp.WSGIApplication([('/', MainHandler),
@@ -143,7 +164,8 @@ def main():
                                           ('/delete',Delete),
                                           ('/deleteall',DeleteAll),
                                           ('/expand',Expand),
-                                          ('/meganii',Meganii)],
+                                          ('/meganii',Meganii),
+                                          ('/meganiicom', Meganiicom)],
                                          debug=True)
     util.run_wsgi_app(application)
 
