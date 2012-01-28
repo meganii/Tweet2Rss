@@ -59,14 +59,16 @@ class Get(webapp.RequestHandler):
                         tweet = Tweet()
                         tweet.id = tweets.id
                         tweet.urls = tweeturls
-                        tweet.content = tweets.text
+                        content = tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>"
+                        tweet.content = content
                         tweet.save()
                         self.response.out.write(tweets.text)
                 else:
                     tweet = Tweet()
                     tweet.id = tweets.id
                     tweet.urls = tweeturls
-                    tweet.content = tweets.text
+                    content = "<![CDATA[" + tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>" + "]]>"
+                    tweet.content = content
                     tweet.save()
                     self.response.out.write(tweets.text)
 
@@ -83,8 +85,8 @@ class Rss(webapp.RequestHandler):
         # フィード作成
         feed = feedgenerator.Rss201rev2Feed(
             title = "extweet",
-            link = "RSSのURL",
-            description = "RSSの説明",
+            link = "http://extractweet.appspot.com/rss",
+            description = "twitterのリストから抽出したURLをRSS配信",
             language = u"ja")
 
         tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
@@ -129,7 +131,6 @@ class Meganii(webapp.RequestHandler):
         api = tweepy.API(auth_handler=auth)
 
         cursor = tweepy.Cursor(api.home_timeline,include_entities='true').items(100)
-
 
         tweetlist = []
         for tweets in cursor:
