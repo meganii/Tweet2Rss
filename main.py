@@ -27,6 +27,7 @@ SLUG  = 'lifehacks'
 class Tweet(db.Model):
     id =  db.IntegerProperty()
     date = db.DateTimeProperty(auto_now_add=True)
+    title = db.StringProperty(multiline=True)
     content = db.StringProperty(multiline=True)
     urls = db.StringListProperty()
 
@@ -43,6 +44,9 @@ class Get(webapp.RequestHandler):
         result = db.GqlQuery("SELECT * FROM Tweet ORDER BY id DESC")
         lasttweet = result.get() # get 1 object
 
+        # black list  I don't want to see.
+        matcher = re.compile("http://4sq.com")
+
         if lasttweet != None:
             cursor = tweepy.Cursor(api.list_timeline,owner=OWNER,slug=SLUG,since_id=lasttweet.id,include_entities='true').items(100)
         else:
@@ -56,21 +60,33 @@ class Get(webapp.RequestHandler):
             if len(tweeturls) > 0:
                 if lasttweet != None:
                     if tweets.id > lasttweet.id:
+                        find = False
+                        for url in tweeturls:
+                            if matcher.search(url):
+                                find = True
+                        if find != True:
+                            tweet = Tweet()
+                            tweet.id = tweets.id
+                            tweet.urls = tweeturls
+                            tweet.title = tweets.text
+                            content = "<![CDATA[" + tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>" + "]]>"
+                            tweet.content = content
+                            tweet.save()
+                            self.response.out.write(tweets.text)
+                else:
+                    find = False
+                    for url in tweeturls:
+                        if matcher.search(url):
+                            find = True
+                    if find != True:
                         tweet = Tweet()
                         tweet.id = tweets.id
                         tweet.urls = tweeturls
-                        content = tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>"
+                        tweet.title = tweets.text
+                        content = "<![CDATA[" + tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>" + "]]>"
                         tweet.content = content
                         tweet.save()
                         self.response.out.write(tweets.text)
-                else:
-                    tweet = Tweet()
-                    tweet.id = tweets.id
-                    tweet.urls = tweeturls
-                    content = "<![CDATA[" + tweets.text + "<a href=\"" + tweeturls[0] + "\">" + tweeturls[0] + "</a>" + "]]>"
-                    tweet.content = content
-                    tweet.save()
-                    self.response.out.write(tweets.text)
 
 class Show(webapp.RequestHandler):
     def get(self):
@@ -92,7 +108,7 @@ class Rss(webapp.RequestHandler):
         tweets = db.GqlQuery("SELECT * FROM Tweet ORDER BY date DESC")
         for tweet in tweets:
             feed.add_item(
-                title = tweet.content,
+                title = tweet.title,
                 link = tweet.urls[0],
                 description = tweet.content,
                 pubdate = tweet.date)
